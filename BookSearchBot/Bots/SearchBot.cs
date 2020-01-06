@@ -4,6 +4,7 @@
 // Generated with Bot Builder V4 SDK Template for Visual Studio EchoBot v4.6.2
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BookSearchBot.API;
@@ -15,13 +16,38 @@ namespace BookSearchBot.Bots
     public class SearchBot : ActivityHandler
     {
         private readonly IApiWrapper _apiWrapper;
+
         public SearchBot(IApiWrapper apiWrapper) => _apiWrapper = apiWrapper;
 
         protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
         {
             var input = turnContext.Activity.Text;
-            
+            var attachment = MessageFactory.Attachment(new List<Attachment>());
             var inputResponse = await _apiWrapper.GetSearchResponse(input);
+
+            if (inputResponse != null)
+            {
+                var resp = $"'{input}' found {inputResponse.Search.TotalResults}. Top 3 results are:";
+
+                var heroItems = inputResponse.Search.Results.WorkItem.Take(3);
+
+                var heroCards = heroItems.Select(i => new HeroCard
+                {
+                    Images = new[] { new CardImage { Url = i.BookItem.ImageUrl } },
+                    Title = i.BookItem.Title,
+                    Subtitle = i.BookItem.Author.Name
+                });
+
+                attachment.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+
+                foreach (var item in heroCards)
+                {
+                    attachment.Attachments.Add(item.ToAttachment());
+                }
+
+                await turnContext.SendActivityAsync(resp, cancellationToken: cancellationToken);
+                await turnContext.SendActivityAsync(attachment, cancellationToken);
+            }
 
             await WelcomeSuggestedActions(turnContext, cancellationToken);
         }

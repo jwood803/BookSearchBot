@@ -11,7 +11,7 @@ namespace BookSearchBot.Models
         [XmlElement("author")]
         public Author Author { get; set; }
 
-        [XmlElement("image_url")]
+        [XmlElement("small_image_url")]
         public string ImageUrl { get; set; }
     }
 }
